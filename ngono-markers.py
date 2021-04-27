@@ -23,11 +23,11 @@ def determine_status(matches: List):
 
 
 @click.command()
-@click.option('--fasta_filepath', type=click.Path(exists=True), help='Input FASTA file path')
+@click.option('--fasta', type=click.Path(exists=True), help='Input FASTA file path')
 @click.option('--blast_db', type=click.Path(exists=True), help='BLAST DB directory')
-def run_search(fasta_filepath: str, blast_db):
+def run_search(fasta: str, blast_db):
     evalue = 1e-20
-    matches = blast_utils.run_blast(query=fasta_filepath, blast_db=blast_db + "/markers", evalue=evalue)
+    matches = blast_utils.run_blast(query=fasta, blast_db=blast_db + "/markers", evalue=evalue)
     # All porA at the moment.
     classified_hits = match_utils.classify_matches(matches['porA'], porA_length)
 
