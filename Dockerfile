@@ -1,15 +1,16 @@
-FROM ubuntu:20.04
+FROM python:3.10-slim
 
 ARG DEBIAN_FRONTEND=noninteractive
+
+COPY --from=docker.io/astral/uv:latest /uv /uvx /bin/
 
 RUN apt update \
     && apt-get install -y --no-install-recommends \
     ncbi-blast+ \
-    python3 \
-    python3-pip \
+    build-essential \
+    gcc \
+    g++ \
     && rm -rf /var/lib/apt/lists/*
-
-RUN pip3 install biopython click
 
 RUN mkdir /data
 
@@ -19,7 +20,10 @@ RUN cd /db && makeblastdb -in markers.fasta -out markers -dbtype nucl -parse_seq
 
 COPY marker_search /marker_search
 
-COPY ngono-markers.py /
+COPY uv.lock pyproject.toml ngono-markers.py /
+
+RUN uv sync --locked && \
+    uv run /ngono-markers.py --help
 
 #CMD ["/bin/bash"]
-ENTRYPOINT ["python3", "/ngono-markers.py"]
+ENTRYPOINT ["uv", "run", "/ngono-markers.py", "--blast-db", "/db"]

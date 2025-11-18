@@ -1,0 +1,9 @@
+[project]
+name = "ngono-markers"
+version = "0.1.0"
+description = "Add your description here"
+requires-python = ">=3.10"
+dependencies = [
+    "biopython==1.76",
+    "click>=8.3.1",
+]

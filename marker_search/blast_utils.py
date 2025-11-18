@@ -1,4 +1,3 @@
-import os
 import uuid
 from collections import defaultdict
 from typing import List
@@ -12,13 +11,13 @@ from marker_search.match_utils import Match
 
 def determine_status(matches: List[Match]) -> str:
     if len(matches) == 0:
-        return 'Not found'
-    status = 'Present'
+        return "Not found"
+    status = "Present"
     for match in matches:
-        if match.isDisrupted or not match.isComplete:
-            status = 'Incomplete'
+        if match.isDisrupted or match.coverage != 1.0:
+            status = "Incomplete"
         else:
-            return 'Present'
+            return "Present"
     return status
 
 
@@ -27,7 +26,6 @@ def overlaps(coords1: tuple, coords2: tuple, threshold=60):
 
 
 def process_contig(contig_id: str, alignments: list) -> dict:
-
     excluded = set()
     contig_keep = defaultdict(dict)
 
@@ -35,23 +33,29 @@ def process_contig(contig_id: str, alignments: list) -> dict:
         selected = list()
         query_alignment = alignments[query]
 
-        title = query_alignment.title.split(' ')[0]
+        title = query_alignment.title.split(" ")[0]
 
         for hsp in query_alignment.hsps:
-            name = title + '_' + str(hsp.query_start)
+            name = title + "_" + str(hsp.query_start)
             if name in excluded:
                 continue
             for test in range(query, len(alignments)):
                 test_ali = alignments[test]
-                test_title = test_ali.title.split(' ')[0]
+                test_title = test_ali.title.split(" ")[0]
                 for test_hsp in test_ali.hsps:
-                    test_name = test_title + '_' + str(test_hsp.query_start)
+                    test_name = test_title + "_" + str(test_hsp.query_start)
                     if test_name in excluded:
                         continue
                     if name == test_name:
                         continue
-                    if overlaps((hsp.query_start, hsp.query_end), (test_hsp.query_start, test_hsp.query_end)):
-                        if hsp.align_length - hsp.gaps < test_hsp.align_length - test_hsp.gaps:
+                    if overlaps(
+                        (hsp.query_start, hsp.query_end),
+                        (test_hsp.query_start, test_hsp.query_end),
+                    ):
+                        if (
+                            hsp.align_length - hsp.gaps
+                            < test_hsp.align_length - test_hsp.gaps
+                        ):
                             excluded.add(test_name)
                             continue
                         elif hsp.identities >= test_hsp.identities:
@@ -80,10 +84,12 @@ def remove_overlaps(blast_records) -> dict:
 
 
 def run_blast(query, blast_db, evalue):
-    out = '/tmp/' + uuid.uuid4().hex
-    blastn_cline = NcbiblastnCommandline(query=query, db=blast_db, evalue=evalue, outfmt=5, out=out)
-    stdout, stderr = blastn_cline()
-    with open(out, 'r') as r_fh:
+    out = "/tmp/" + uuid.uuid4().hex
+    blastn_cline = NcbiblastnCommandline(
+        query=str(query), db=blast_db, evalue=evalue, outfmt=5, out=out
+    )
+    blastn_cline()
+    with open(out, "r") as r_fh:
         selected_records = remove_overlaps(NCBIXML.parse(r_fh))
-    os.remove(out)
+    # os.remove(out)
     return selected_records
